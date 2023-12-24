@@ -17,6 +17,8 @@ public class UpdateRights extends UnifiedAgent {
     Logger log = LogManager.getLogger(this.getClass().getName());
     ISession ses = null;
     IDocumentServer srv = null;
+    String prjCode = "";
+    String compShortName = "";
 
     public UpdateRights() {
     }
@@ -30,33 +32,56 @@ public class UpdateRights extends UnifiedAgent {
             srv = ses.getDocumentServer();
             IDocument engDocument = this.getEventDocument();
             try {
+                this.log.info("Update Right started for:" + engDocument.getID());
+                prjCode = engDocument.getDescriptorValue("ccmPRJCard_code");
+
                 String fromCode = engDocument.getDescriptorValue("ccmSenderCode");
                 String receiverCode = engDocument.getDescriptorValue("ccmReceiverCode");
 
-                this.log.info("Update Last Version Finished");
-                return this.resultSuccess("Ended successfully");
-            } catch (Exception var15) {
-                throw new RuntimeException(var15);
+                boolean isMainCompFrom = isMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS", fromCode);
+                boolean isMainCompTo = isMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS", receiverCode);
+
+                if(!isMainCompFrom){compShortName = fromCode;}
+                if(!isMainCompTo){compShortName = receiverCode;}
+                log.info("Ubdate Rights...not main company :" + compShortName);
+
+                String unitName = prjCode + "_" + compShortName;
+                log.info("Ubdate Rights...unit name :" + unitName);
+                IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
+                if(unit!=null){
+                    engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
+                    engDocument.commit();
+                    log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
+                }else {
+                    log.info("Ubdate Rights...unit is null :" + unitName);
+                    return this.resultError("Ubdate Rights...unit null :" + unitName);
+                }
+            }catch (Exception e) {
+                log.error("Exception Caught");
+                log.error(e.getMessage());
+                return resultError(e.getMessage());
             }
+            this.log.info("Update Right finished for:" + engDocument.getID());
+            return this.resultSuccess("Ended successfully");
         }
     }
-    public boolean existDCCGVList(String paramName, String key1, String key2) {
+    public boolean isMainCompGVList(String paramName, String compSName) {
         boolean rtrn = false;
         IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
         String rowValuePrjCode = "";
-        String rowValueParamUserID = "";
         String rowValueParamDCC = "";
-        String rowValueParamMyComp = "";
+        String rowValueParamCompSName = "";
+        String rowValueParamMainComp = "";
         for(int i = 0; i < settingsMatrix.getRowCount(); i++) {
-            rowValuePrjCode = settingsMatrix.getValue(i, 0);
-            rowValueParamUserID = settingsMatrix.getValue(i, 5);
-            rowValueParamDCC = settingsMatrix.getValue(i, 6);
-            rowValueParamMyComp = settingsMatrix.getValue(i, 7);
+            //rowValuePrjCode = settingsMatrix.getValue(i, 0);
+            //rowValueParamDCC = settingsMatrix.getValue(i, 6);
+            rowValueParamCompSName = settingsMatrix.getValue(i, 1);
+            rowValueParamMainComp = settingsMatrix.getValue(i, 7);
 
             //if (!Objects.equals(rowValuePrjCode, prjCode)){continue;}
-            if (!Objects.equals(rowValueParamDCC, key1)){continue;}
-            if (!Objects.equals(rowValueParamUserID, key2)){continue;}
-            if (!Objects.equals(rowValueParamMyComp, "1")){continue;}
+            //if (!Objects.equals(rowValueParamDCC, key1)){continue;}
+            if (!Objects.equals(rowValueParamCompSName, compSName)){continue;}
+            if (!Objects.equals(rowValueParamMainComp, "1")){continue;}
 
             return true;
         }

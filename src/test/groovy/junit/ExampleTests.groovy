@@ -22,7 +22,7 @@ class ExampleTests {
     void testForAgentResult() {
         def agent = new UpdateRights();
 
-        String ids ="SD07PRJ_DOC2437188b24-7c63-49c8-b136-8b6e26cd6e35182023-12-20T06:14:32.399Z011"
+        String ids ="SD07PRJ_DOC24f8b935ca-9be1-4a9f-b9d6-28b6983a9428182023-12-21T11:07:59.182Z011"
 
 
         binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = ids
