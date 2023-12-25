@@ -5,6 +5,7 @@
 
 package ser;
 
+import ser.Constants.*;
 import com.ser.blueline.*;
 import com.ser.blueline.metaDataComponents.*;
 import de.ser.doxis4.agentserver.UnifiedAgent;
@@ -17,8 +18,11 @@ public class UpdateRights extends UnifiedAgent {
     Logger log = LogManager.getLogger(this.getClass().getName());
     ISession ses = null;
     IDocumentServer srv = null;
+    IUser owner = null;
     String prjCode = "";
+    String mainCompSName = "";
     String compShortName = "";
+    String ownerCompSName = "";
 
     public UpdateRights() {
     }
@@ -33,16 +37,37 @@ public class UpdateRights extends UnifiedAgent {
             IDocument engDocument = this.getEventDocument();
             try {
                 this.log.info("Update Right started for:" + engDocument.getID());
+                owner = getDocumentServer().getUser(getSes() , engDocument.getOwnerID());
                 prjCode = engDocument.getDescriptorValue("ccmPRJCard_code");
+                mainCompSName = getMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS");
+
+                IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
+                if(ownerContactFile != null){
+                    ownerCompSName = ownerContactFile.getDescriptorValue("ContactShortName");
+                }
 
                 String fromCode = engDocument.getDescriptorValue("ccmSenderCode");
                 String receiverCode = engDocument.getDescriptorValue("ccmReceiverCode");
+                if(fromCode == null){
+                    engDocument.setDescriptorValue("ccmSenderCode",ownerCompSName);
+                }
+                if(receiverCode == null && !Objects.equals(ownerCompSName, mainCompSName)){
+                    engDocument.setDescriptorValue("ccmReceiverCode",mainCompSName);
+                }
+                engDocument.commit();
 
-                boolean isMainCompFrom = isMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS", fromCode);
-                boolean isMainCompTo = isMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS", receiverCode);
+                fromCode = engDocument.getDescriptorValue("ccmSenderCode");
+                receiverCode = engDocument.getDescriptorValue("ccmReceiverCode");
 
-                if(!isMainCompFrom){compShortName = fromCode;}
-                if(!isMainCompTo){compShortName = receiverCode;}
+                if(!Objects.equals(mainCompSName, fromCode)){
+                    compShortName = fromCode;
+                }else {
+                    compShortName = receiverCode;
+                }
+//                boolean isMainCompFrom = isMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS", fromCode);
+//                boolean isMainCompTo = isMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS", receiverCode);
+//                if(!isMainCompFrom){compShortName = fromCode;}
+//                if(!isMainCompTo){compShortName = receiverCode;}
                 log.info("Ubdate Rights...not main company :" + compShortName);
 
                 String unitName = prjCode + "_" + compShortName;
@@ -87,48 +112,56 @@ public class UpdateRights extends UnifiedAgent {
         }
         return rtrn;
     }
-    public IQueryDlg findQueryDlgForQueryClass(IQueryClass queryClass) {
-        IQueryDlg dlg = null;
-        if (queryClass != null) {
-            dlg = queryClass.getQueryDlg("default");
-        }
+    public String getMainCompGVList(String paramName) {
+        String rtrn = "";
+        IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
+        String rowValuePrjCode = "";
+        String rowValueParamDCC = "";
+        String rowValueParamCompSName = "";
+        String rowValueParamMainComp = "";
+        for(int i = 0; i < settingsMatrix.getRowCount(); i++) {
+            //rowValuePrjCode = settingsMatrix.getValue(i, 0);
+            //rowValueParamDCC = settingsMatrix.getValue(i, 6);
+            rowValueParamCompSName = settingsMatrix.getValue(i, 1);
+            rowValueParamMainComp = settingsMatrix.getValue(i, 7);
 
-        return dlg;
+            //if (!Objects.equals(rowValuePrjCode, prjCode)){continue;}
+            //if (!Objects.equals(rowValueParamDCC, key1)){continue;}
+            //if (!Objects.equals(rowValueParamCompSName, compSName)){continue;}
+            if (!Objects.equals(rowValueParamMainComp, "1")){continue;}
+
+            return rowValueParamCompSName;
+        }
+        return rtrn;
     }
-    public IQueryParameter query(ISession session, IQueryDlg queryDlg, Map<String, String> descriptorValues) {
-        IDocumentServer documentServer = session.getDocumentServer();
-        ISerClassFactory classFactory = documentServer.getClassFactory();
-        IQueryParameter queryParameter = null;
-        IQueryExpression expression = null;
-        IComponent[] components = queryDlg.getComponents();
+    public IDocument getContactFolder(String eMail)  {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Constants.ClassIDs.SupplierContactWS).append("'")
+                .append(" AND ")
+                .append("PrimaryEMail").append(" = '").append(eMail).append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
 
-        for(int i = 0; i < components.length; ++i) {
-            if (components[i].getType() == IMaskedEdit.TYPE) {
-                IControl control = (IControl)components[i];
-                String descriptorId = control.getDescriptorID();
-                String value = (String)descriptorValues.get(descriptorId);
-                if (value != null && value.trim().length() > 0) {
-                    IDescriptor descriptor = documentServer.getDescriptor(descriptorId, session);
-                    IQueryValueDescriptor queryValueDescriptor = classFactory.getQueryValueDescriptorInstance(descriptor);
-                    queryValueDescriptor.addValue(value);
-                    IQueryExpression expr = queryValueDescriptor.getExpression();
-                    if (expression != null) {
-                        expression = classFactory.getExpressionInstance(expression, expr, 0);
-                    } else {
-                        expression = expr;
-                    }
-                }
-            }
-        }
-
-        if (expression != null) {
-            queryParameter = classFactory.getQueryParameterInstance(session, queryDlg, expression);
-        }
-
-        return queryParameter;
+        IInformationObject[] informationObjects = createQuery(new String[]{Databases.BPWS} , whereClause , 1);
+        if(informationObjects.length < 1) {return null;}
+        return (IDocument) informationObjects[0];
     }
-    public IDocumentHitList executeQuery(ISession session, IQueryParameter queryParameter) {
-        IDocumentServer documentServer = session.getDocumentServer();
-        return documentServer.query(queryParameter, session);
+    public IInformationObject[] createQuery(String[] dbNames , String whereClause , int maxHits){
+        String[] databaseNames = dbNames;
+
+        ISerClassFactory fac = getSrv().getClassFactory();
+        IQueryParameter que = fac.getQueryParameterInstance(
+                getSes() ,
+                databaseNames ,
+                fac.getExpressionInstance(whereClause) ,
+                null,null);
+        if(maxHits > 0) {
+            que.setMaxHits(maxHits);
+            que.setHitLimit(maxHits + 1);
+            que.setHitLimitThreshold(maxHits + 1);
+        }
+        IDocumentHitList hits = que.getSession() != null? que.getSession().getDocumentServer().query(que, que.getSession()):null;
+        if(hits == null) return null;
+        else return hits.getInformationObjects();
     }
 }

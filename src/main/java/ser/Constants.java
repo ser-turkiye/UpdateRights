@@ -16,12 +16,22 @@ public class Constants {
             public static String FinalPath = "C:\\SER\\TEMP\\output-4.docx";
         }
     }
+    public static class Databases{
+        public static final String Company = "D_QCON";
+        public static final String ProjectCard= "PRJ_FOLDER";
+        public static final String EngineeringDocument= "PRJ_DOC";
+        public static final String EngineeringCRS = "PRJ_CRS";
+        public static final String BPM = "BPM";
+        public static final String BPWS = "BPWS";
+
+    }
     public static class ClassIDs{
         public static final String ProjectFolder = "32e74338-d268-484d-99b0-f90187240549";
         public static final String ProjectDocsFolder = "897b6ca0-441c-4c43-8cf9-735d8d7453c6";
         public static final String DocumentCycle = "66975476-3c0b-4781-bac1-0a661c40bf97";
         public static final String ProjDocumentArchive = "acb37372-0240-4a44-95e2-424b8f93ffe4";
         public static final String CRSProjDocumentArchive = "3e1fe7b3-3e86-4910-8155-c29b662e71d6";
+        public static final String SupplierContactWS = "d7ffea9d-3419-4922-8ffa-a0310add5723";
     }
     public static class Descriptors {
         public static final String ProjectNumber = "ProjectNumber";
