@@ -32,6 +32,7 @@ public class Constants {
         public static final String ProjDocumentArchive = "acb37372-0240-4a44-95e2-424b8f93ffe4";
         public static final String CRSProjDocumentArchive = "3e1fe7b3-3e86-4910-8155-c29b662e71d6";
         public static final String SupplierContactWS = "d7ffea9d-3419-4922-8ffa-a0310add5723";
+        public static final String InvolveParty = "fad93754-b7c2-4a12-b40e-8afae3b31e3d";
     }
     public static class Descriptors {
         public static final String ProjectNumber = "ProjectNumber";

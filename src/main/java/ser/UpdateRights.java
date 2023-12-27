@@ -43,7 +43,9 @@ public class UpdateRights extends UnifiedAgent {
 
                 IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
                 if(ownerContactFile != null){
-                    ownerCompSName = ownerContactFile.getDescriptorValue("ContactShortName");
+                    IDocument ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
+                    //ownerCompSName = ownerContactFile.getDescriptorValue("ContactShortName");
+                    ownerCompSName = ownerContractorFile.getDescriptorValue("ContactShortName");
                 }
 
                 String fromCode = engDocument.getDescriptorValue("ccmSenderCode");
@@ -139,6 +141,20 @@ public class UpdateRights extends UnifiedAgent {
         builder.append("TYPE = '").append(Constants.ClassIDs.SupplierContactWS).append("'")
                 .append(" AND ")
                 .append("PrimaryEMail").append(" = '").append(eMail).append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
+
+        IInformationObject[] informationObjects = createQuery(new String[]{Databases.BPWS} , whereClause , 1);
+        if(informationObjects.length < 1) {return null;}
+        return (IDocument) informationObjects[0];
+    }
+    public IDocument getContractorFolder(String compCode)  {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(ClassIDs.InvolveParty).append("'")
+                .append(" AND ")
+                .append("ccmPRJCard_code").append(" = '").append(prjCode).append("'")
+                .append(" AND ")
+                .append("ObjectNumber").append(" = '").append(compCode).append("'");
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
