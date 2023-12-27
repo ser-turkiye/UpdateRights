@@ -45,7 +45,7 @@ public class UpdateRights extends UnifiedAgent {
                 if(ownerContactFile != null){
                     IDocument ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
                     //ownerCompSName = ownerContactFile.getDescriptorValue("ContactShortName");
-                    ownerCompSName = ownerContractorFile.getDescriptorValue("ContactShortName");
+                    ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
                 }
 
                 String fromCode = engDocument.getDescriptorValue("ccmSenderCode");
