@@ -41,7 +41,7 @@ public class UpdateRights extends UnifiedAgent {
                 this.log.info("Update Right started for:" + engDocument.getID());
                 owner = getDocumentServer().getUser(getSes() , engDocument.getOwnerID());
                 prjCode = engDocument.getDescriptorValue("ccmPRJCard_code");
-                if(Objects.equals(prjCode, "")){
+                if(prjCode == null){
                     return this.resultError("Ubdate Rights...Project Code is null:" + prjCode);
                 }
                 mainCompSName = getMainCompGVList("CCM_PARAM_CONTRACTOR-MEMBERS");
@@ -51,60 +51,62 @@ public class UpdateRights extends UnifiedAgent {
                 log.info("Update Rights..Main CompShortName:" + mainCompSName);
                 String originator = engDocument.getDescriptorValue("ccmPrjDocOiginator");
                 log.info("update rights...originator:" + originator);
-                if(extUnit != null){
-                    List<String> units = Arrays.asList(owner.getUnitIDs());
-                    isExternal = units.contains(extUnit.getID());
-                }
-                if(!isExternal && originator != null && !originator.equals(mainCompSName)){
-                    isExternal = true;
-                    ownerCompSName = originator.toUpperCase();
-                }
-                if(isExternal) {
-                    IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
-                    if (originator != null) {
-                        IDocument ownerContractorFile = getContractorFolder(originator.toUpperCase());
-                        if (ownerContractorFile != null) {
-                            ownerCompSName = (ownerContractorFile.getDescriptorValue("ContactShortName") != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
+                if(originator != null){
+                    if(extUnit != null){
+                        List<String> units = Arrays.asList(owner.getUnitIDs());
+                        isExternal = units.contains(extUnit.getID());
+                    }
+                    if(!isExternal && originator != null && !originator.equals(mainCompSName)){
+                        isExternal = true;
+                        ownerCompSName = originator.toUpperCase();
+                    }
+                    if(isExternal) {
+                        IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
+                        if (originator != null) {
+                            IDocument ownerContractorFile = getContractorFolder(originator.toUpperCase());
+                            if (ownerContractorFile != null) {
+                                ownerCompSName = (ownerContractorFile.getDescriptorValue("ContactShortName") != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
+                            } else if (ownerContactFile != null) {
+                                ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
+                                ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
+                            }
                         } else if (ownerContactFile != null) {
-                            ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
+                            IDocument ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
                             ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
                         }
-                    } else if (ownerContactFile != null) {
-                        IDocument ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
-                        ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
-                    }
-                    log.info("Update Rights..Is External...Owner CompShortName:" + ownerCompSName);
-                    compShortName = ownerCompSName;
-                    engDocument.setDescriptorValue("ccmSenderCode", ownerCompSName);
-                    engDocument.setDescriptorValue("ccmReceiverCode", mainCompSName);
-                    engDocument.commit();
-
-                    String unitName = prjCode + "_" + compShortName;
-                    log.info("Ubdate Rights..Is External..unit name :" + unitName);
-                    IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
-                    if(unit!=null){
-                        engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
+                        log.info("Update Rights..Is External...Owner CompShortName:" + ownerCompSName);
+                        compShortName = ownerCompSName;
+                        engDocument.setDescriptorValue("ccmSenderCode", ownerCompSName);
+                        engDocument.setDescriptorValue("ccmReceiverCode", mainCompSName);
                         engDocument.commit();
-                        log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
-                    }else {
-                        log.info("Ubdate Rights...unit is null :" + unitName);
-                        return this.resultError("Ubdate Rights..IsExternal..unit null :" + unitName);
-                    }
-                }else {
-                    compShortName = mainCompSName;
-                    engDocument.setDescriptorValue("ccmSenderCode", mainCompSName);
-                    engDocument.commit();
 
-                    String unitName = prjCode;
-                    log.info("Ubdate Rights..Is Internal..unit name :" + unitName);
-                    IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
-                    if(unit!=null){
-                        engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
-                        engDocument.commit();
-                        log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
+                        String unitName = prjCode + "_" + compShortName;
+                        log.info("Ubdate Rights..Is External..unit name :" + unitName);
+                        IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
+                        if(unit!=null){
+                            engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
+                            engDocument.commit();
+                            log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
+                        }else {
+                            log.info("Ubdate Rights...unit is null :" + unitName);
+                            return this.resultError("Ubdate Rights..IsExternal..unit null :" + unitName);
+                        }
                     }else {
-                        log.info("Ubdate Rights...unit is null :" + unitName);
-                        return this.resultError("Ubdate Rights..IsInternal..unit is null :" + unitName);
+                        compShortName = mainCompSName;
+                        engDocument.setDescriptorValue("ccmSenderCode", mainCompSName);
+                        engDocument.commit();
+
+                        String unitName = prjCode;
+                        log.info("Ubdate Rights..Is Internal..unit name :" + unitName);
+                        IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
+                        if(unit!=null){
+                            engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
+                            engDocument.commit();
+                            log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
+                        }else {
+                            log.info("Ubdate Rights...unit is null :" + unitName);
+                            return this.resultError("Ubdate Rights..IsInternal..unit is null :" + unitName);
+                        }
                     }
                 }
             }catch (Exception e) {
