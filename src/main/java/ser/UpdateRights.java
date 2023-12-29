@@ -71,7 +71,7 @@ public class UpdateRights extends UnifiedAgent {
                     log.info("Update Rights..Is External...Owner CompShortName:" + ownerCompSName);
                 }
 
-                isExternal = (!ownerCompSName.equals(mainCompSName) ? true : isExternal);
+                isExternal = (!Objects.equals(ownerCompSName, "") && !ownerCompSName.equals(mainCompSName) || isExternal);
                 log.info("Update Rights..Is External2 :" + isExternal);
                 if(isExternal){
                     compShortName = ownerCompSName;
