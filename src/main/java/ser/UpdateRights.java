@@ -36,7 +36,6 @@ public class UpdateRights extends UnifiedAgent {
             ses = getSes();
             srv = ses.getDocumentServer();
             IDocument engDocument = this.getEventDocument();
-            IUnit extUnit = ses.getDocumentServer().getUnitByName(getSes(),"ExternalReader");
             try {
                 this.log.info("Update Right started for:" + engDocument.getID());
                 owner = getDocumentServer().getUser(getSes() , engDocument.getOwnerID());
@@ -51,64 +50,77 @@ public class UpdateRights extends UnifiedAgent {
                 log.info("Update Rights..Main CompShortName:" + mainCompSName);
                 String originator = engDocument.getDescriptorValue("ccmPrjDocOiginator");
                 log.info("update rights...originator:" + originator);
-                if(originator != null){
-                    if(extUnit != null){
-                        List<String> units = Arrays.asList(owner.getUnitIDs());
-                        isExternal = units.contains(extUnit.getID());
-                    }
-                    if(!isExternal && originator != null && !originator.equals(mainCompSName)){
+
+                IUnit extUnit = ses.getDocumentServer().getUnitByName(getSes(),"ExternalReader");
+                if(extUnit != null){
+                    List<String> units = Arrays.asList(owner.getUnitIDs());
+                    if(units.contains(extUnit.getID())){
                         isExternal = true;
-                        ownerCompSName = originator.toUpperCase();
-                    }
-                    if(isExternal) {
-                        IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
-                        if (originator != null) {
-                            IDocument ownerContractorFile = getContractorFolder(originator.toUpperCase());
-                            if (ownerContractorFile != null) {
-                                ownerCompSName = (ownerContractorFile.getDescriptorValue("ContactShortName") != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
-                            } else if (ownerContactFile != null) {
-                                ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
-                                ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
-                            }
-                        } else if (ownerContactFile != null) {
-                            IDocument ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
-                            ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
-                        }
-                        log.info("Update Rights..Is External...Owner CompShortName:" + ownerCompSName);
-                        compShortName = ownerCompSName;
-                        engDocument.setDescriptorValue("ccmSenderCode", ownerCompSName);
-                        engDocument.setDescriptorValue("ccmReceiverCode", mainCompSName);
-                        engDocument.commit();
-
-                        String unitName = prjCode + "_" + compShortName;
-                        log.info("Ubdate Rights..Is External..unit name :" + unitName);
-                        IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
-                        if(unit!=null){
-                            engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
-                            engDocument.commit();
-                            log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
-                        }else {
-                            log.info("Ubdate Rights...unit is null :" + unitName);
-                            return this.resultError("Ubdate Rights..IsExternal..unit null :" + unitName);
-                        }
-                    }else {
-                        compShortName = mainCompSName;
-                        engDocument.setDescriptorValue("ccmSenderCode", mainCompSName);
-                        engDocument.commit();
-
-                        String unitName = prjCode;
-                        log.info("Ubdate Rights..Is Internal..unit name :" + unitName);
-                        IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
-                        if(unit!=null){
-                            engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
-                            engDocument.commit();
-                            log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
-                        }else {
-                            log.info("Ubdate Rights...unit is null :" + unitName);
-                            return this.resultError("Ubdate Rights..IsInternal..unit is null :" + unitName);
-                        }
                     }
                 }
+                log.info("Update Rights..Is External :" + isExternal);
+
+                ownerCompSName = (originator != null && !originator.equals(mainCompSName) ? originator.toUpperCase() : ownerCompSName);
+
+                if(Objects.equals(ownerCompSName, "")) {
+                    IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
+                    if (ownerContactFile != null) {
+                        IDocument ownerContractorFile = getContractorFolder(ownerContactFile.getDescriptorValue("ObjectNumber"));
+                        ownerCompSName = (ownerContractorFile != null ? ownerContractorFile.getDescriptorValue("ContactShortName") : "");
+                    }
+                    log.info("Update Rights..Is External...Owner CompShortName:" + ownerCompSName);
+                }
+
+                isExternal = (!ownerCompSName.equals(mainCompSName) ? true : isExternal);
+                log.info("Update Rights..Is External2 :" + isExternal);
+                if(isExternal){
+                    compShortName = ownerCompSName;
+
+                    engDocument.setDescriptorValue("ccmSenderCode", ownerCompSName);
+                    engDocument.setDescriptorValue("ccmReceiverCode", mainCompSName);
+
+                    String unitName = prjCode + "_" + compShortName;
+                    log.info("Ubdate Rights..Is External..unit name :" + unitName);
+                    IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
+                    if(unit!=null){
+                        engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
+                        log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
+                    }else {
+                        log.info("Ubdate Rights...unit is null :" + unitName);
+                        return this.resultError("Ubdate Rights..IsExternal..unit null :" + unitName);
+                    }
+
+                    try {
+                        engDocument.commit();
+                    }catch (Exception e){
+                        log.info("UpdateRights...commit error:" + e);
+                        log.info("restarting agent....");
+                        return resultRestart("Restarting Agent for UpdateRights");
+                    }
+                }else {
+                    compShortName = mainCompSName;
+                    engDocument.setDescriptorValue("ccmSenderCode", mainCompSName);
+
+                    String unitName = prjCode;
+                    log.info("Ubdate Rights..Is Internal..unit name :" + unitName);
+                    IUnit unit = getDocumentServer().getUnitByName(getSes(), unitName);
+                    if(unit!=null){
+                        engDocument.setDescriptorValue("AbacOrgaRead",unit.getID());
+                        log.info("Ubdate Rights..rights set for the unit:" + unit.getName());
+                    }else {
+                        log.info("Ubdate Rights...unit is null :" + unitName);
+                        return this.resultError("Ubdate Rights..IsInternal..unit is null :" + unitName);
+                    }
+
+                    try {
+                        engDocument.commit();
+                    }catch (Exception e){
+                        log.info("UpdateRights...commit error:" + e);
+                        log.info("restarting agent....");
+                        return resultRestart("Restarting Agent for UpdateRights");
+                    }
+                }
+
             }catch (Exception e) {
                 log.error("Exception Caught");
                 log.error(e.getMessage());
@@ -180,11 +192,11 @@ public class UpdateRights extends UnifiedAgent {
                 .append(" AND ")
                 .append("ccmPRJCard_code").append(" = '").append(prjCode).append("'")
                 .append(" AND ")
-                .append("ContactShortName").append(" = '").append(compSCode).append("'");
+                .append("ObjectNumber").append(" = '").append(compSCode).append("'");
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        IInformationObject[] informationObjects = createQuery(new String[]{Databases.BPWS} , whereClause , 1);
+        IInformationObject[] informationObjects = createQuery(new String[]{"PRJ_FOLDER"} , whereClause , 1);
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
