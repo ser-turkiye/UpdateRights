@@ -129,12 +129,12 @@ public class UpdateRights extends UnifiedAgent {
         String rowValueParamCompSName = "";
         String rowValueParamMainComp = "";
         for(int i = 0; i < settingsMatrix.getRowCount(); i++) {
-            //rowValuePrjCode = settingsMatrix.getValue(i, 0);
+            rowValuePrjCode = settingsMatrix.getValue(i, 0);
             //rowValueParamDCC = settingsMatrix.getValue(i, 6);
             rowValueParamCompSName = settingsMatrix.getValue(i, 1);
             rowValueParamMainComp = settingsMatrix.getValue(i, 7);
 
-            //if (!Objects.equals(rowValuePrjCode, prjCode)){continue;}
+            if (!Objects.equals(rowValuePrjCode, prjCode)){continue;}
             //if (!Objects.equals(rowValueParamDCC, key1)){continue;}
             if (!Objects.equals(rowValueParamCompSName, compSName)){continue;}
             if (!Objects.equals(rowValueParamMainComp, "1")){continue;}
@@ -151,13 +151,11 @@ public class UpdateRights extends UnifiedAgent {
         String rowValueParamCompSName = "";
         String rowValueParamMainComp = "";
         for(int i = 0; i < settingsMatrix.getRowCount(); i++) {
-            //rowValuePrjCode = settingsMatrix.getValue(i, 0);
-            //rowValueParamDCC = settingsMatrix.getValue(i, 6);
+            rowValuePrjCode = settingsMatrix.getValue(i, 0);
             rowValueParamCompSName = settingsMatrix.getValue(i, 1);
             rowValueParamMainComp = settingsMatrix.getValue(i, 7);
 
-            //if (!Objects.equals(rowValuePrjCode, prjCode)){continue;}
-            //if (!Objects.equals(rowValueParamDCC, key1)){continue;}
+            if (!Objects.equals(rowValuePrjCode, prjCode)){continue;}
             //if (!Objects.equals(rowValueParamCompSName, compSName)){continue;}
             if (!Objects.equals(rowValueParamMainComp, "1")){continue;}
 
