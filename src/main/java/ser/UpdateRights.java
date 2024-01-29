@@ -39,6 +39,7 @@ public class UpdateRights extends UnifiedAgent {
             try {
                 this.log.info("Update Right started for:" + engDocument.getID());
                 owner = getDocumentServer().getUser(getSes() , engDocument.getOwnerID());
+                boolean isAdmin = isAdmin(owner);
                 prjCode = engDocument.getDescriptorValue("ccmPRJCard_code");
                 if(prjCode == null){
                     return this.resultError("Ubdate Rights...Project Code is null:" + prjCode);
@@ -47,6 +48,7 @@ public class UpdateRights extends UnifiedAgent {
                 if(Objects.equals(mainCompSName, "")){
                     return this.resultError("Ubdate Rights...Main Comp Name is null:" + mainCompSName);
                 }
+
                 log.info("Update Rights..Main CompShortName:" + mainCompSName);
                 String originator = engDocument.getDescriptorValue("ccmPrjDocOiginator");
                 String sender = engDocument.getDescriptorValue("ccmSenderCode");
@@ -83,7 +85,7 @@ public class UpdateRights extends UnifiedAgent {
                         log.info("Update Rights..Is External...Owner CompShortName:" + ownerCompSName);
                     }
 
-                    isExternal = (!Objects.equals(ownerCompSName, "") && !ownerCompSName.equals(mainCompSName) || isExternal);
+                    isExternal = (!Objects.equals(ownerCompSName, "") && !ownerCompSName.equals(mainCompSName) && !isAdmin || isExternal);
                     log.info("Update Rights..Is External2 :" + isExternal);
                     if (isExternal) {
                         compShortName = ownerCompSName;
@@ -119,6 +121,17 @@ public class UpdateRights extends UnifiedAgent {
             }
             this.log.info("Update Right finished for:" + engDocument.getID());
             return this.resultSuccess("Ended successfully");
+        }
+    }
+    public boolean isAdmin(IUser user) throws Exception {
+        try {
+            boolean rtrn = false;
+            IRole admRole = getSes().getDocumentServer().getRoleByName(getSes(),"admins");
+            String[] roleIDs = (user != null ? user.getRoleIDs() : null);
+            rtrn = Arrays.asList(roleIDs).contains(admRole.getID());
+            return rtrn;
+        }catch (Exception e){
+            throw new Exception("Exeption Caught..isAdmin: " + e);
         }
     }
     public boolean isMainCompGVList(String paramName, String compSName) {
