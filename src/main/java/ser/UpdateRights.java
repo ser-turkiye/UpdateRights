@@ -73,8 +73,8 @@ public class UpdateRights extends UnifiedAgent {
                         }
                     }
                     log.info("Update Rights..Check...Is External :" + isExternal);
-
-                    ownerCompSName = (originator != null && !originator.equals(mainCompSName) ? originator.toUpperCase() : ownerCompSName);
+                    originator = originator.toUpperCase();
+                    ownerCompSName = (originator != null ? originator : ownerCompSName);
 
                     if (Objects.equals(ownerCompSName, "")) {
                         IDocument ownerContactFile = getContactFolder(owner.getEMailAddress());
