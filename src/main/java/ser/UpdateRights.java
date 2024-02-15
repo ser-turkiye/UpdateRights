@@ -73,7 +73,7 @@ public class UpdateRights extends UnifiedAgent {
                         }
                     }
                     log.info("Update Rights..Check...Is External :" + isExternal);
-                    originator = originator.toUpperCase();
+                    originator = (originator != null ? originator.toUpperCase() : originator);
                     ownerCompSName = (originator != null ? originator : ownerCompSName);
 
                     if (Objects.equals(ownerCompSName, "")) {
